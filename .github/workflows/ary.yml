@@ -1,4 +1,4 @@
-name: Deploy PHP Website to AWS EC2 (with Office2 Key)
+name: Deploy PHP Website to AWS EC2 (Generate Key Pair)
 
 on: workflow_dispatch
 
@@ -21,6 +21,20 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-south-1
+
+    - name: Create Key Pair (Office2)
+      id: create-key
+      run: |
+        echo "Creating EC2 Key Pair Office2..."
+        aws ec2 delete-key-pair --key-name Office2 --region ap-south-1 || true
+        aws ec2 create-key-pair \
+          --key-name Office2 \
+          --key-type rsa \
+          --key-format pem \
+          --region ap-south-1 \
+          --query 'KeyMaterial' \
+          --output text > Office2.pem
+        chmod 400 Office2.pem
 
     - name: Create or Reuse Security Group
       id: sg
@@ -83,11 +97,6 @@ jobs:
 
         echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
         echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-
-    - name: Save EC2 Private Key
-      run: |
-        echo "${{ secrets.Office2 }}" > Office2.pem
-        chmod 400 Office2.pem
 
     - name: Wait for SSH to be Ready
       run: sleep 30
