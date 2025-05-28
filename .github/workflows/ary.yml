@@ -1,4 +1,4 @@
-name: Deploy PHP Website to AWS EC2 (with AWS Secrets)
+name: Deploy PHP Website to AWS EC2 (with Office2 Key)
 
 on: workflow_dispatch
 
@@ -60,10 +60,10 @@ jobs:
           --image-id ami-03bb6d83c60fc5f7c \
           --count 1 \
           --instance-type t2.micro \
-          --key-name Officekey \
+          --key-name Office2 \
           --security-group-ids $SG_ID \
           --region ap-south-1 \
-          --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=Officekey}]' \
+          --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=Office2Instance}]' \
           --query "Instances[0].InstanceId" \
           --output text)
 
@@ -76,7 +76,7 @@ jobs:
       id: get-ip
       run: |
         PUBLIC_IP=$(aws ec2 describe-instances \
-          --filters "Name=tag:Name,Values=Officekey" \
+          --filters "Name=tag:Name,Values=Office2Instance" \
           --query "Reservations[0].Instances[0].PublicIpAddress" \
           --region ap-south-1 \
           --output text)
@@ -86,15 +86,15 @@ jobs:
 
     - name: Save EC2 Private Key
       run: |
-        echo "${{ secrets.Officekey }}" > Officekey.pem
-        chmod 400 Officekey.pem
+        echo "${{ secrets.Office2 }}" > Office2.pem
+        chmod 400 Office2.pem
 
     - name: Wait for SSH to be Ready
       run: sleep 30
 
     - name: Install Apache, PHP 8.1, and MySQL
       run: |
-        ssh -o StrictHostKeyChecking=no -i Officekey.pem ubuntu@$PUBLIC_IP <<EOF
+        ssh -o StrictHostKeyChecking=no -i Office2.pem ubuntu@$PUBLIC_IP <<EOF
           sudo apt update
           sudo apt install -y apache2 php8.1 php8.1-cli php8.1-mysql mysql-server unzip git
           sudo systemctl enable --now apache2
@@ -103,7 +103,7 @@ jobs:
 
     - name: Clone and Deploy Your PHP Website
       run: |
-        ssh -o StrictHostKeyChecking=no -i Officekey.pem ubuntu@$PUBLIC_IP <<EOF
+        ssh -o StrictHostKeyChecking=no -i Office2.pem ubuntu@$PUBLIC_IP <<EOF
           cd /tmp
           git clone https://github.com/AryanSharma2206/gym-website.git site
           sudo rm -rf /var/www/html/*
