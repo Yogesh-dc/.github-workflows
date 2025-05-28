@@ -19,7 +19,7 @@ jobs:
     - name: Configure AWS credentials (OIDC)
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/GitHubActionsDeployRole
+        role-to-assume: arn:aws:iam::654654417133:role/GitHubActionsDeployRole
         aws-region: ap-south-1
 
     - name: Create or Reuse Security Group
