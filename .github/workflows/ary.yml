@@ -2,6 +2,10 @@ name: Deploy PHP Website to AWS EC2
 
 on: workflow_dispatch
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -11,6 +15,12 @@ jobs:
     steps:
     - name: Checkout Deployment Repo
       uses: actions/checkout@v3
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/GitHubActionsDeployRole
+        aws-region: ap-south-1
 
     - name: Create or Reuse Security Group
       id: sg
@@ -41,9 +51,6 @@ jobs:
         fi
 
         echo "SG_ID=$SG_ID" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     - name: Launch EC2 Instance
       id: launch-ec2
@@ -64,10 +71,6 @@ jobs:
 
         echo "Waiting for EC2 to be running..."
         aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region ap-south-1
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ap-south-1
 
     - name: Get Public IP
       id: get-ip
@@ -80,10 +83,6 @@ jobs:
 
         echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
         echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ap-south-1
 
     - name: Save EC2 Private Key
       run: |
@@ -117,8 +116,4 @@ jobs:
     # Optional: Terminate EC2 Instance After Job
     # - name: Terminate EC2 Instance
     #   if: always()
-    #   run: aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region $AWS_REGION
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     AWS_REGION: ${{ secrets.AWS_REGION }} yogeshchoudhary
+    #   run: aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region ap-south-1
